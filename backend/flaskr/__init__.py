@@ -166,10 +166,10 @@ def create_app(test_config=None):
     Try using the word "title" to start.
     """
 
-    @app.route("/questions", methods=["POST"])
+    @app.route("/questions/search", methods=["POST"])
     def search_questions():
         json = request.get_json()
-        search_term = json.get("searchTerm", default="")
+        search_term = json.get("searchTerm", "")
         questions_db = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
 
         questions = [q.format() for q in questions_db]
