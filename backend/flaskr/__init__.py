@@ -1,9 +1,15 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
+
+
+class HttpStatusCodes:
+    SUCCESS = 200
+    BAD_REQUEST = 400
+    NOT_FOUND = 404
 
 
 def create_app(test_config=None):
@@ -28,21 +34,13 @@ def create_app(test_config=None):
         return response
 
     """
-    A default get route for debugging purposes
-    """
-
-    @app.route("/")
-    def default_get():
-        return "Server is running"
-
-    """
     Create an endpoint to handle GET requests
     for all available categories.
     """
 
     @app.route('/categories')
     def get_all_categories():
-        categories_db = Category.query.all()
+        categories_db = Category.query.order_by(Category.type).all()
         categories_dict = {}
         for c in categories_db:
             category_id, category_type = c.id, c.type
@@ -66,7 +64,7 @@ def create_app(test_config=None):
     def get_all_questions():
         questions_db = Question.query.all()
         questions = [q.format() for q in questions_db]
-        categories_db = Category.query.all()
+        categories_db = Category.query.order_by(Category.type).all()
         categories_dict = {}
         for c in categories_db:
             category_id, category_type = c.id, c.type
@@ -77,7 +75,7 @@ def create_app(test_config=None):
             'categories': categories_dict
         }
         print(result)
-        return jsonify(result)
+        return jsonify(result), HttpStatusCodes.SUCCESS
 
     """
     Create an endpoint to DELETE question using a question ID.
@@ -99,7 +97,6 @@ def create_app(test_config=None):
         return jsonify(success=True)
 
     """
-    @TODO:
     Create an endpoint to POST a new question,
     which will require the question and answer text,
     category, and difficulty score.
@@ -109,8 +106,29 @@ def create_app(test_config=None):
     page of the questions list in the "List" tab.
     """
 
+    @app.route('/questions', methods=['POST'])
+    def post_new_question():
+        json = request.get_json()
+
+        question_text = json.get('question')
+        answer_text = json.get('answer')
+        category = json.get('category')
+        difficulty = json.get('difficulty')
+
+        if question_text is None or \
+                answer_text is None or \
+                category is None or \
+                difficulty is None:
+            return jsonify(success=False), HttpStatusCodes.BAD_REQUEST
+
+        question = Question(question=question_text,
+                            answer=answer_text,
+                            category=category,
+                            difficulty=difficulty)
+        question.insert()
+        return jsonify(success=True), HttpStatusCodes.SUCCESS
+
     """
-    @TODO:
     Create a POST endpoint to get questions based on a search term.
     It should return any questions for whom the search term
     is a substring of the question.
