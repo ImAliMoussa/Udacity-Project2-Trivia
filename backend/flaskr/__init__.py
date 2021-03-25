@@ -1,17 +1,9 @@
 from http import HTTPStatus
 
-from flask import (
-    Flask,
-    jsonify,
-    request
-)
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from models import (
-    setup_db,
-    Question,
-    Category
-)
+from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
@@ -33,8 +25,12 @@ def create_app(test_config=None):
 
     @app.after_request
     def after_request(response):
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,true")
-        response.headers.add("Access-Control-Allow-Methods", "GET,PATCH,POST,DELETE,OPTIONS")
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PATCH,POST,DELETE,OPTIONS"
+        )
         return response
 
     """
@@ -42,7 +38,7 @@ def create_app(test_config=None):
     for all available categories.
     """
 
-    @app.route('/categories')
+    @app.route("/categories")
     def get_all_categories():
         categories_db = Category.query.order_by(Category.type).all()
 
@@ -51,7 +47,7 @@ def create_app(test_config=None):
             category_id, category_type = c.id, c.type
             categories_dict[category_id] = category_type
 
-        return jsonify({'categories': categories_dict})
+        return jsonify({"categories": categories_dict})
 
     """
     Create an endpoint to handle GET requests for questions,
@@ -66,10 +62,11 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
 
-    @app.route('/questions', methods=['GET'])
+    @app.route("/questions", methods=["GET"])
     def get_all_questions():
         # pagination start and finish
-        start_index = int(request.args.get('page', default="1"))
+        page = int(request.args.get("page", default="1"))
+        start_index = (page - 1) * QUESTIONS_PER_PAGE
         finish_index = start_index + QUESTIONS_PER_PAGE
 
         # get all questions from db
@@ -93,9 +90,10 @@ def create_app(test_config=None):
             categories_dict[category_id] = category_type
 
         result = {
-            'questions': questions,
-            'totalQuestions': total_questions,
-            'categories': categories_dict
+            "questions": questions,
+            "total_questions": total_questions,
+            "categories": categories_dict,
+            "current_category": None
         }
 
         return jsonify(result), HTTPStatus.OK
@@ -108,7 +106,7 @@ def create_app(test_config=None):
     This removal will persist in the database and when you refresh the page.
     """
 
-    @app.route('/questions/<int:key>', methods=['DELETE'])
+    @app.route("/questions/<int:key>", methods=["DELETE"])
     def delete_question(key: int):
         question = Question.query.get(key)
         # if question is not found in the database
@@ -129,27 +127,31 @@ def create_app(test_config=None):
     page of the questions list in the "List" tab.
     """
 
-    @app.route('/questions', methods=['POST'])
+    @app.route("/questions", methods=["POST"])
     def post_new_question():
         json = request.get_json()
 
-        question_text = json.get('question')
-        answer_text = json.get('answer')
-        category = json.get('category')
-        difficulty = json.get('difficulty')
+        question_text = json.get("question")
+        answer_text = json.get("answer")
+        category = json.get("category")
+        difficulty = json.get("difficulty")
 
         # make sure all required data is present
-        if question_text is None \
-                or answer_text is None \
-                or category is None \
-                or difficulty is None:
+        if (
+            question_text is None
+            or answer_text is None
+            or category is None
+            or difficulty is None
+        ):
             return jsonify(success=False), HTTPStatus.BAD_REQUEST
 
         # create new question and add commit to the db
-        question = Question(question=question_text,
-                            answer=answer_text,
-                            category=category,
-                            difficulty=difficulty)
+        question = Question(
+            question=question_text,
+            answer=answer_text,
+            category=category,
+            difficulty=difficulty,
+        )
         question.insert()
 
         return jsonify(success=True), HTTPStatus.OK
@@ -164,12 +166,19 @@ def create_app(test_config=None):
     Try using the word "title" to start.
     """
 
-    @app.route('/questions', methods=['POST'])
+    @app.route("/questions", methods=["POST"])
     def search_questions():
         json = request.get_json()
+        search_term = json.get("searchTerm", default="")
+        questions_db = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
+
+        questions = [q.format() for q in questions_db]
+        total_questions = len(questions)
 
         result = {
-
+            'questions': questions,
+            'total_questions': total_questions,
+            'current_category': None
         }
 
         return jsonify(result), HTTPStatus.OK
