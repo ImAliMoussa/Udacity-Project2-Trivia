@@ -50,7 +50,6 @@ def create_app(test_config=None):
         return jsonify({'categories': categories_dict})
 
     """
-    @TODO:
     Create an endpoint to handle GET requests for questions,
     including pagination (every 10 questions).
     This endpoint should return a list of questions,
@@ -81,13 +80,23 @@ def create_app(test_config=None):
         return jsonify(result)
 
     """
-    @TODO:
     Create an endpoint to DELETE question using a question ID.
 
     TEST: When you click the trash icon next to a question, the question will
     be removed.
     This removal will persist in the database and when you refresh the page.
     """
+
+    @app.route('/questions/<int:key>', methods=['DELETE'])
+    def delete_question(key: int):
+        question = Question.query.get(key)
+
+        # if question is not found in the database
+        if question is None:
+            return jsonify(success=False), 404
+
+        question.delete()
+        return jsonify(success=True)
 
     """
     @TODO:
