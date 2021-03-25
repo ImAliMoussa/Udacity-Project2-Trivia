@@ -1,15 +1,19 @@
-from flask import Flask, jsonify, request
+from http import HTTPStatus
+
+from flask import (
+    Flask,
+    jsonify,
+    request
+)
 from flask_cors import CORS
 
-from models import setup_db, Question, Category
+from models import (
+    setup_db,
+    Question,
+    Category
+)
 
 QUESTIONS_PER_PAGE = 10
-
-
-class HttpStatusCodes:
-    SUCCESS = 200
-    BAD_REQUEST = 400
-    NOT_FOUND = 404
 
 
 def create_app(test_config=None):
@@ -41,10 +45,12 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_all_categories():
         categories_db = Category.query.order_by(Category.type).all()
+
         categories_dict = {}
         for c in categories_db:
             category_id, category_type = c.id, c.type
             categories_dict[category_id] = category_type
+
         return jsonify({'categories': categories_dict})
 
     """
@@ -60,22 +66,39 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
 
-    @app.route('/questions')
+    @app.route('/questions', methods=['GET'])
     def get_all_questions():
+        # pagination start and finish
+        start_index = int(request.args.get('page', default="1"))
+        finish_index = start_index + QUESTIONS_PER_PAGE
+
+        # get all questions from db
         questions_db = Question.query.all()
+        total_questions = len(questions_db)
+
+        # if page requested is out of range -> return 404 not found
+        if start_index >= total_questions:
+            return jsonify(success=False), HTTPStatus.NOT_FOUND
+
+        # drop question not in current page
+        questions_db = questions_db[start_index:finish_index]
         questions = [q.format() for q in questions_db]
+
+        # get categories from db and format them in key-value pairs for frontend
         categories_db = Category.query.order_by(Category.type).all()
+
         categories_dict = {}
         for c in categories_db:
             category_id, category_type = c.id, c.type
             categories_dict[category_id] = category_type
+
         result = {
             'questions': questions,
-            'totalQuestions': len(questions),
+            'totalQuestions': total_questions,
             'categories': categories_dict
         }
-        print(result)
-        return jsonify(result), HttpStatusCodes.SUCCESS
+
+        return jsonify(result), HTTPStatus.OK
 
     """
     Create an endpoint to DELETE question using a question ID.
@@ -88,13 +111,13 @@ def create_app(test_config=None):
     @app.route('/questions/<int:key>', methods=['DELETE'])
     def delete_question(key: int):
         question = Question.query.get(key)
-
         # if question is not found in the database
         if question is None:
-            return jsonify(success=False), 404
+            return jsonify(success=False), HTTPStatus.NOT_FOUND
 
         question.delete()
-        return jsonify(success=True)
+
+        return jsonify(success=True), HTTPStatus.OK
 
     """
     Create an endpoint to POST a new question,
@@ -115,18 +138,21 @@ def create_app(test_config=None):
         category = json.get('category')
         difficulty = json.get('difficulty')
 
-        if question_text is None or \
-                answer_text is None or \
-                category is None or \
-                difficulty is None:
-            return jsonify(success=False), HttpStatusCodes.BAD_REQUEST
+        # make sure all required data is present
+        if question_text is None \
+                or answer_text is None \
+                or category is None \
+                or difficulty is None:
+            return jsonify(success=False), HTTPStatus.BAD_REQUEST
 
+        # create new question and add commit to the db
         question = Question(question=question_text,
                             answer=answer_text,
                             category=category,
                             difficulty=difficulty)
         question.insert()
-        return jsonify(success=True), HttpStatusCodes.SUCCESS
+
+        return jsonify(success=True), HTTPStatus.OK
 
     """
     Create a POST endpoint to get questions based on a search term.
@@ -137,6 +163,16 @@ def create_app(test_config=None):
     only question that include that string within their question.
     Try using the word "title" to start.
     """
+
+    @app.route('/questions', methods=['POST'])
+    def search_questions():
+        json = request.get_json()
+
+        result = {
+
+        }
+
+        return jsonify(result), HTTPStatus.OK
 
     """
     @TODO:
