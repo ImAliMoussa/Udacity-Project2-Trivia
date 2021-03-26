@@ -98,7 +98,9 @@ GET '/categories'
     '5' : "Entertainment",
     '6' : "Sports"
 }
-
+```
+***
+```
 GET '/questions?page={INSERT_PAGE_NUM}'
 - Fetches a list of questions, categories and the total number of questions in the database
 - Path parameters: None
@@ -129,8 +131,9 @@ GET '/questions?page={INSERT_PAGE_NUM}'
     ],
     "total_questions": 22
 }
-
-
+```
+***
+```
 DELETE '/questions/{INSERT_QUESTION_ID}'
 - Sends a request to delete a question from the database
 - Path parameters:
@@ -142,7 +145,9 @@ DELETE '/questions/{INSERT_QUESTION_ID}'
 {
     "success": true
 }
-
+```
+***
+```
 POST '/questions'
 - Sends a request to post a new question to the database
 - Path parameters: None
@@ -159,8 +164,9 @@ POST '/questions'
 {
     "success": true
 }
-
-
+```
+***
+```
 POST '/questions/search'
 - Fetches questions that contains a search term as a substring in the question
 - Path parameters: None
@@ -187,7 +193,9 @@ POST '/questions/search'
     ],
     "total_questions": 12
 }
-
+```
+***
+```
 
 GET '/categories/{INSERT_CATEGORY_ID}/questions'
 - Fetches all questions of a specific category
@@ -215,7 +223,9 @@ GET '/categories/{INSERT_CATEGORY_ID}/questions'
     "total_questions": 7
 }
 
-
+```
+***
+```
 POST '/quizzes'
 - Fetches a question per request for the quiz
 - Path parameters: None
