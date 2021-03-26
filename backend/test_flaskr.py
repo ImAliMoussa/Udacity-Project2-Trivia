@@ -45,23 +45,23 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().get("/categories")
         json_data = res.get_json()
         self.assertEqual(res.status_code, HTTPStatus.OK)
-        self.assertTrue(json_data.get('categories'))
-        self.assertGreater(len(json_data.get('categories')), 0)
+        self.assertTrue(json_data.get("categories"))
+        self.assertGreater(len(json_data.get("categories")), 0)
 
     # tests for /questions GET
     def test_working_get_questions_no_page(self):
         res = self.client().get("/questions")
         json_data = res.get_json()
         self.assertEqual(res.status_code, HTTPStatus.OK)
-        self.assertGreater(len(json_data.get('questions')), 0)
-        self.assertGreater(len(json_data.get('categories')), 0)
-        self.assertGreater(json_data.get('total_questions'), 0)
+        self.assertGreater(len(json_data.get("questions")), 0)
+        self.assertGreater(len(json_data.get("categories")), 0)
+        self.assertGreater(json_data.get("total_questions"), 0)
 
     # not a test, just a helper function
     def getNumberOfQuestionPages(self):
         res = self.client().get("/questions")
         json_data = res.get_json()
-        num_questions = int(json_data.get('total_questions'))
+        num_questions = int(json_data.get("total_questions"))
         # number of pages is the ceiling of number_questions / questions per page
         num_pages = (num_questions + QUESTIONS_PER_PAGE - 1) // QUESTIONS_PER_PAGE
         return num_pages
@@ -71,26 +71,26 @@ class TriviaTestCase(unittest.TestCase):
         num_pages = self.getNumberOfQuestionPages()
 
         for page in range(1, num_pages + 1):
-            res = self.client().get("/questions", query_string={'page': page})
+            res = self.client().get("/questions", query_string={"page": page})
             json_data = res.get_json()
             self.assertEqual(res.status_code, HTTPStatus.OK)
-            self.assertGreater(len(json_data.get('questions')), 0)
-            self.assertGreater(len(json_data.get('categories')), 0)
-            self.assertGreater(json_data.get('total_questions'), 0)
+            self.assertGreater(len(json_data.get("questions")), 0)
+            self.assertGreater(len(json_data.get("categories")), 0)
+            self.assertGreater(json_data.get("total_questions"), 0)
 
     # get request should produce a NOT_FOUND 404 error
     def test_out_of_bounds_page_questions(self):
         num_pages = self.getNumberOfQuestionPages()
         # num_pages + 1 is out of bounds, last correct page is num_pages
-        res = self.client().get("/questions", query_string={'page': num_pages + 1})
+        res = self.client().get("/questions", query_string={"page": num_pages + 1})
         json_data = res.get_json()
 
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
-        self.assertEqual(json_data.get('message'), HTTPStatus.NOT_FOUND.phrase)
-        self.assertFalse(json_data.get('success'))
+        self.assertEqual(json_data.get("message"), HTTPStatus.NOT_FOUND.phrase)
+        self.assertFalse(json_data.get("success"))
 
-        self.assertFalse(json_data.get('questions'))
-        self.assertFalse(json_data.get('categories'))
+        self.assertFalse(json_data.get("questions"))
+        self.assertFalse(json_data.get("categories"))
 
     # tests for questions delete request
     def test_successful_delete(self):
@@ -99,7 +99,7 @@ class TriviaTestCase(unittest.TestCase):
         json_data = setup_res.get_json()
 
         # get the id of the first question in the result
-        key = json_data.get('questions')[0].get('id')
+        key = json_data.get("questions")[0].get("id")
 
         res = self.client().delete(f"/questions/{key}")
         json_data = res.get_json()
@@ -114,18 +114,18 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(json_data.get("message"), HTTPStatus.NOT_FOUND.phrase)
-        self.assertFalse(json_data.get('success'))
+        self.assertFalse(json_data.get("success"))
 
     def test_successful_post_question(self):
         # get one of the categories
         setup_res = self.client().get("/questions")
         json_data = setup_res.get_json()
-        category = list(json_data.get('categories'))[0]
+        category = list(json_data.get("categories"))[0]
         question = {
-            'question': "Example question text",
-            'answer': "YES!",
-            'difficulty': 1,
-            'category': category
+            "question": "Example question text",
+            "answer": "YES!",
+            "difficulty": 1,
+            "category": category,
         }
 
         res = self.client().post("/questions", json=question)
@@ -136,9 +136,9 @@ class TriviaTestCase(unittest.TestCase):
     def test_unsuccessful_post_question(self):
         # category is a missing field
         question = {
-            'question': "Example question text",
-            'answer': "YES!",
-            'difficulty': 1,
+            "question": "Example question text",
+            "answer": "YES!",
+            "difficulty": 1,
             # 'category': category
         }
 
@@ -150,9 +150,7 @@ class TriviaTestCase(unittest.TestCase):
 
     # test search questions functionality
     def test_search_functionality(self):
-        body = {
-            "searchTerm": "what"
-        }
+        body = {"searchTerm": "what"}
         res = self.client().post("/questions/search", json=body)
         json = res.get_json()
         self.assertEqual(res.status_code, HTTPStatus.OK)
@@ -163,7 +161,7 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_category_questions(self):
         setup_res = self.client().get("/questions")
         json_data = setup_res.get_json()
-        category = list(json_data.get('categories'))[0]
+        category = list(json_data.get("categories"))[0]
         res = self.client().get(f"categories/{category}/questions")
         json = res.get_json()
         questions = json.get("questions")
@@ -197,9 +195,7 @@ class TriviaTestCase(unittest.TestCase):
         num_questions = int(tmp_json.get("total_questions"))
         previous_questions = []
         for i in range(num_questions + 1):
-            data = {
-                "previous_questions": previous_questions
-            }
+            data = {"previous_questions": previous_questions}
             res = self.client().post("/quizzes", json=data)
             json_res = res.get_json()
             question = json_res.get("question")
@@ -217,19 +213,14 @@ class TriviaTestCase(unittest.TestCase):
     def test_quiz_with_category(self):
         setup_res = self.client().get("/questions")
         json_data = setup_res.get_json()
-        category_id = list(json_data.get('categories'))[0]
-        category = {
-            "id": category_id
-        }
+        category_id = list(json_data.get("categories"))[0]
+        category = {"id": category_id}
         res = self.client().get(f"categories/{category_id}/questions")
         json = res.get_json()
         num_questions = int(json.get("total_questions"))
         previous_questions = []
         for i in range(num_questions + 1):
-            data = {
-                "previous_questions": previous_questions,
-                "quiz_category": category
-            }
+            data = {"previous_questions": previous_questions, "quiz_category": category}
             res = self.client().post("/quizzes", json=data)
             json_res = res.get_json()
             question = json_res.get("question")
