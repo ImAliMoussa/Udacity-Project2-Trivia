@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
 
 from models import setup_db, Question, Category
@@ -47,7 +47,7 @@ def create_app(test_config=None):
             category_id, category_type = c.id, c.type
             categories_dict[category_id] = category_type
 
-        return jsonify({"categories": categories_dict})
+        return jsonify({"categories": categories_dict}), HTTPStatus.OK
 
     """
     Create an endpoint to handle GET requests for questions,
@@ -75,7 +75,7 @@ def create_app(test_config=None):
 
         # if page requested is out of range -> return 404 not found
         if start_index >= total_questions:
-            return jsonify(success=False), HTTPStatus.NOT_FOUND
+            abort(HTTPStatus.NOT_FOUND)
 
         # drop question not in current page
         questions_db = questions_db[start_index:finish_index]
@@ -93,7 +93,7 @@ def create_app(test_config=None):
             "questions": questions,
             "total_questions": total_questions,
             "categories": categories_dict,
-            "current_category": None
+            "current_category": None,
         }
 
         return jsonify(result), HTTPStatus.OK
@@ -108,13 +108,8 @@ def create_app(test_config=None):
 
     @app.route("/questions/<int:key>", methods=["DELETE"])
     def delete_question(key: int):
-        question = Question.query.get(key)
-        # if question is not found in the database
-        if question is None:
-            return jsonify(success=False), HTTPStatus.NOT_FOUND
-
+        question = Question.query.get_or_404(key)
         question.delete()
-
         return jsonify(success=True), HTTPStatus.OK
 
     """
@@ -143,7 +138,7 @@ def create_app(test_config=None):
             or category is None
             or difficulty is None
         ):
-            return jsonify(success=False), HTTPStatus.BAD_REQUEST
+            abort(HTTPStatus.BAD_REQUEST)
 
         # create new question and add commit to the db
         question = Question(
@@ -170,27 +165,42 @@ def create_app(test_config=None):
     def search_questions():
         json = request.get_json()
         search_term = json.get("searchTerm", "")
-        questions_db = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
+        questions_db = Question.query.filter(
+            Question.question.ilike(f"%{search_term}%")
+        ).all()
 
         questions = [q.format() for q in questions_db]
         total_questions = len(questions)
 
         result = {
-            'questions': questions,
-            'total_questions': total_questions,
-            'current_category': None
+            "questions": questions,
+            "total_questions": total_questions,
+            "current_category": None,
         }
 
         return jsonify(result), HTTPStatus.OK
 
     """
-    @TODO:
     Create a GET endpoint to get questions based on category.
 
     TEST: In the "List" tab / main screen, clicking on one of the
     categories in the left column will cause only questions of that
     category to be shown.
     """
+
+    @app.route("/categories/<int:key>/questions")
+    def get_question_by_category(key: int):
+        category = Category.query.get_or_404(key)
+        questions_db = Question.query.filter(Question.category == category.id).all()
+        questions = [q.format() for q in questions_db]
+        total_questions = len(questions)
+        result = {
+            "questions": questions,
+            "total_questions": total_questions,
+            "current_category": key,
+        }
+
+        return jsonify(result), HTTPStatus.OK
 
     """
     @TODO:
@@ -205,9 +215,60 @@ def create_app(test_config=None):
     """
 
     """
-    @TODO:
     Create error handlers for all expected errors
     including 404 and 422.
     """
+
+    @app.errorhandler(HTTPStatus.BAD_REQUEST)
+    def bad_request_400(error):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": HTTPStatus.BAD_REQUEST,
+                    "message": HTTPStatus.BAD_REQUEST.phrase,
+                }
+            ),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    @app.errorhandler(HTTPStatus.NOT_FOUND)
+    def not_found_404(error):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": HTTPStatus.NOT_FOUND,
+                    "message": HTTPStatus.NOT_FOUND.phrase,
+                }
+            ),
+            HTTPStatus.NOT_FOUND,
+        )
+
+    @app.errorhandler(HTTPStatus.UNPROCESSABLE_ENTITY)
+    def unprocessable_entity_422(error):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": HTTPStatus.UNPROCESSABLE_ENTITY,
+                    "message": HTTPStatus.UNPROCESSABLE_ENTITY.phrase,
+                }
+            ),
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
+
+    @app.errorhandler(HTTPStatus.INTERNAL_SERVER_ERROR)
+    def internal_server_error_500(error):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": HTTPStatus.INTERNAL_SERVER_ERROR,
+                    "message": HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
+                }
+            ),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
     return app
