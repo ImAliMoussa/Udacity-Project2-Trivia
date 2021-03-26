@@ -132,7 +132,7 @@ def create_app(test_config=None):
         category = json.get("category")
         difficulty = json.get("difficulty")
 
-        # make sure all required data is present
+        # make sure all required data is present, else -> 400 error response
         if (
             question_text is None
             or answer_text is None
@@ -165,7 +165,12 @@ def create_app(test_config=None):
     @app.route("/questions/search", methods=["POST"])
     def search_questions():
         json = request.get_json()
+
+        # get json from posted body
         search_term = json.get("searchTerm", "")
+
+        # search for search term in the question text
+        # search is case insensitive
         questions_db = Question.query.filter(
             Question.question.ilike(f"%{search_term}%")
         ).all()
@@ -222,20 +227,32 @@ def create_app(test_config=None):
     @app.route("/quizzes", methods=["POST"])
     def get_next_quiz_question():
         json = request.get_json()
+
+        # get previous questions from posted json, default value is an empty array
         previous_questions = json.get("previous_questions", [])
+        # quiz category, if any
         quiz_category = json.get("quiz_category", None)
+
+        # possible questions are questions which have NOT been asked before
         possible_questions = Question.query.filter(
             Question.id.notin_(previous_questions)
         )
+
+        # if a category is specified, then only keep the category we want
         if quiz_category is not None:
             possible_questions = possible_questions.filter(
-                Question.category == quiz_category.get('id')
+                Question.category == quiz_category.get("id")
             )
+
+        # actually fetch from db
         possible_questions = possible_questions.all()
+
+        # if list is not empty then choose a random question, else return None
         if len(possible_questions) > 0:
             question = random.choice(possible_questions).format()
         else:
             question = None
+
         result = {"question": question}
         return jsonify(result), HTTPStatus.OK
 
