@@ -1,10 +1,10 @@
+import random
 from http import HTTPStatus
 
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
 
 from models import setup_db, Question, Category
-import random
 
 QUESTIONS_PER_PAGE = 10
 
@@ -82,7 +82,7 @@ def create_app(test_config=None):
         questions_db = questions_db[start_index:finish_index]
         questions = [q.format() for q in questions_db]
 
-        # get categories from db and format them in key-value pairs for frontend
+        # get categories from db, format them in key-value pairs for frontend
         categories_db = Category.query.order_by(Category.type).all()
 
         categories_dict = {}
@@ -134,10 +134,10 @@ def create_app(test_config=None):
 
         # make sure all required data is present, else -> 400 error response
         if (
-            question_text is None
-            or answer_text is None
-            or category is None
-            or difficulty is None
+                question_text is None or
+                answer_text is None or
+                category is None or
+                difficulty is None
         ):
             abort(HTTPStatus.BAD_REQUEST)
 
@@ -197,7 +197,9 @@ def create_app(test_config=None):
     @app.route("/categories/<int:key>/questions")
     def get_question_by_category(key: int):
         category = Category.query.get_or_404(key)
-        questions_db = Question.query.filter(Question.category == category.id).all()
+        questions_db = Question.query.filter(
+            Question.category == category.id
+        ).all()
         questions = [q.format() for q in questions_db]
         total_questions = len(questions)
         result = {
@@ -228,7 +230,8 @@ def create_app(test_config=None):
     def get_next_quiz_question():
         json = request.get_json()
 
-        # get previous questions from posted json, default value is an empty array
+        # get previous questions from posted json
+        # default value is an empty array
         previous_questions = json.get("previous_questions", [])
         # quiz category, if any
         quiz_category = json.get("quiz_category", None)
@@ -239,7 +242,7 @@ def create_app(test_config=None):
         )
 
         # if a category is specified, then only keep the category we want
-        if quiz_category is not None:
+        if quiz_category is not None and quiz_category.get("id") != 0:
             possible_questions = possible_questions.filter(
                 Question.category == quiz_category.get("id")
             )

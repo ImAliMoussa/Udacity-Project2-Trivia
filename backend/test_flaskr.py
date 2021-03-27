@@ -1,11 +1,10 @@
-import os
 import unittest
-import json
+from http import HTTPStatus
+
 from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app, QUESTIONS_PER_PAGE
-from models import setup_db, Question, Category
-from http import HTTPStatus
+from models import setup_db
 
 
 class TriviaTestCase(unittest.TestCase):
@@ -20,7 +19,9 @@ class TriviaTestCase(unittest.TestCase):
         database_username = "postgres"
         database_password = "changeme"
         database_host = "localhost:5432"
-        self.database_path = f"{database_dialect}://{database_username}:{database_password}@{database_host}/{database_name}"
+        self.database_path = f"{database_dialect}://" + \
+            f"{database_username}:{database_password}" + \
+            f"@{database_host}/{database_name}"
         setup_db(self.app, self.database_path)
 
         # binds the app to the current context
@@ -33,11 +34,6 @@ class TriviaTestCase(unittest.TestCase):
     def tearDown(self):
         """Executed after reach test"""
         pass
-
-    """
-    TODO
-    Write at least one test for each test for successful operation and for expected errors.
-    """
 
     # tests for /categories
     # no tests where this route should fail
@@ -62,8 +58,9 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().get("/questions")
         json_data = res.get_json()
         num_questions = int(json_data.get("total_questions"))
-        # number of pages is the ceiling of number_questions / questions per page
-        num_pages = (num_questions + QUESTIONS_PER_PAGE - 1) // QUESTIONS_PER_PAGE
+        # num of pages = ceil(number_questions / questions per page)
+        num_pages = (num_questions + QUESTIONS_PER_PAGE - 1) \
+            // QUESTIONS_PER_PAGE
         return num_pages
 
     # successfully get request
@@ -82,7 +79,8 @@ class TriviaTestCase(unittest.TestCase):
     def test_out_of_bounds_page_questions(self):
         num_pages = self.getNumberOfQuestionPages()
         # num_pages + 1 is out of bounds, last correct page is num_pages
-        res = self.client().get("/questions", query_string={"page": num_pages + 1})
+        res = self.client().get("/questions",
+                                query_string={"page": num_pages + 1})
         json_data = res.get_json()
 
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
@@ -220,7 +218,10 @@ class TriviaTestCase(unittest.TestCase):
         num_questions = int(json.get("total_questions"))
         previous_questions = []
         for i in range(num_questions + 1):
-            data = {"previous_questions": previous_questions, "quiz_category": category}
+            data = {
+                "previous_questions": previous_questions,
+                "quiz_category": category
+            }
             res = self.client().post("/quizzes", json=data)
             json_res = res.get_json()
             question = json_res.get("question")
